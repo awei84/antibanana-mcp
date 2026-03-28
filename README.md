@@ -2,7 +2,7 @@
 
 把 Antigravity 的生图能力封装成一个可通过 stdio 启动的 MCP Server。
 
-默认情况下，程序会直接读取本机 Antigravity 的凭证，无需手动导出凭证文件；如果你已经有一份可用的凭证 JSON，也可以通过环境变量显式指定。
+默认读取本机已登录的 Antigravity 凭证，无需额外配置；也支持通过凭证文件显式指定。
 
 ## 功能
 
@@ -15,13 +15,7 @@
 - Node.js 20+
 - 本机已登录 Antigravity，或一份可用的凭证 JSON
 
-## 安装
-
-```bash
-npm install -g antibanana-mcp
-```
-
-## MCP 接入示例
+## MCP 接入
 
 以 Claude Desktop 为例（`~/Library/Application Support/Claude/claude_desktop_config.json`）：
 
@@ -30,21 +24,22 @@ npm install -g antibanana-mcp
   "mcpServers": {
     "antibanana": {
       "command": "npx",
-      "args": ["antibanana-mcp"]
+      "args": ["-y", "antibanana-mcp"]
     }
   }
 }
 ```
 
-带代理（国内需要）：
+需要代理（国内访问 Google 服务）：
 
 ```json
 {
   "mcpServers": {
     "antibanana": {
       "command": "npx",
-      "args": ["antibanana-mcp"],
+      "args": ["-y", "antibanana-mcp"],
       "env": {
+        "HTTPS_PROXY": "http://127.0.0.1:7890",
         "ANTIBANANA_PROXY_URL": "http://127.0.0.1:7890"
       }
     }
@@ -52,13 +47,39 @@ npm install -g antibanana-mcp
 }
 ```
 
-## 常用环境变量
+## 固化凭证（可选，更稳定）
+
+默认每次启动都会读取本机 Antigravity 数据库，首次 `generate_image` 时还会自动获取 project_id。
+
+如果想固定下来，可以创建一个凭证文件（例如 `~/antigravity-creds.json`）：
+
+```json
+{
+  "refresh_token": "1//你的refresh_token",
+  "project_id": "你的project-id"
+}
+```
+
+然后在 MCP 配置里指定：
+
+```json
+{
+  "env": {
+    "ANTIBANANA_CREDENTIALS_PATH": "/Users/你的用户名/antigravity-creds.json"
+  }
+}
+```
+
+`refresh_token` 和 `project_id` 的值在首次 `generate_image` 成功后可从 MCP 启动日志里获取。
+
+## 环境变量
 
 | 变量 | 说明 |
 |------|------|
-| `ANTIBANANA_CREDENTIALS_PATH` | 显式指定凭证 JSON 路径（不设则自动读本机 Antigravity） |
-| `ANTIBANANA_PROJECT_ID` | 显式指定 project_id（不设则自动获取） |
-| `ANTIBANANA_PROXY_URL` | 代理地址 |
+| `HTTPS_PROXY` | 代理地址（影响 token 刷新） |
+| `ANTIBANANA_PROXY_URL` | 代理地址（影响 API 请求） |
+| `ANTIBANANA_CREDENTIALS_PATH` | 凭证 JSON 路径（不设则自动读本机 Antigravity） |
+| `ANTIBANANA_PROJECT_ID` | 显式指定 project_id（不设则首次生图时自动获取） |
 | `ANTIBANANA_TIMEOUT_MS` | 请求超时毫秒数（默认 120000） |
 
 ## 本地开发
@@ -68,9 +89,3 @@ npm install
 npm run build
 npm test
 ```
-
-## 说明
-
-- 默认读取本机 Antigravity `state.vscdb`，无需额外配置
-- 支持显式指定凭证 JSON
-- 当前只提供 stdio MCP Server，不包含图形界面
