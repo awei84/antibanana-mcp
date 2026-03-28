@@ -1,0 +1,52 @@
+{
+  "name": "antibanana-mcp",
+  "version": "0.1.0",
+  "description": "通过 MCP 封装 Google Antigravity Nano Banana 生图能力",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "antibanana-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "keywords": [
+    "mcp",
+    "antigravity",
+    "gemini",
+    "image-generation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/awei84/antibanana-mcp.git"
+  },
+  "homepage": "https://github.com/awei84/antibanana-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/awei84/antibanana-mcp/issues"
+  },
+  "author": "",
+  "license": "ISC",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "google-auth-library": "^10.4.1",
+    "https-proxy-agent": "^8.0.0",
+    "sql.js": "^1.14.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/sql.js": "^1.4.11",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
