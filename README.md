@@ -4,6 +4,8 @@
 
 默认读取本机已登录的 Antigravity 凭证，无需额外配置；也支持通过凭证文件显式指定。
 
+[![LINUX DO](https://img.shields.io/badge/LINUX%20DO-Community-blue)](https://linux.do)
+
 ## 功能
 
 - `list_models`：列出当前账号可用的生图模型
