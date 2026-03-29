@@ -1,29 +1,44 @@
 # antibanana-mcp
 
-把 Antigravity 的生图能力封装成一个可通过 stdio 启动的 MCP Server。
-
-默认读取本机已登录的 Antigravity 凭证，无需额外配置；也支持通过凭证文件显式指定。
-
+[![npm version](https://img.shields.io/npm/v/antibanana-mcp)](https://www.npmjs.com/package/antibanana-mcp)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![License: ISC](https://img.shields.io/badge/license-ISC-blue)](LICENSE)
 [![LINUX DO](https://img.shields.io/badge/LINUX%20DO-Community-blue)](https://linux.do)
 
-## 功能
+**[English](./README.en.md)** | 中文
 
-- `list_models`：列出当前账号可用的生图模型
-- `check_quota`：查看指定模型配额
-- `generate_image`：根据提示词生成图片，支持指定宽高比和分辨率（512 / 1K / 2K / 4K，默认 1K）
+> 把 Google Antigravity 的 Nano Banana 生图能力封装成 MCP Server，让任何支持 MCP 的 AI 客户端都能画图。
 
-`generate_image` 可能返回多张图。默认 `largest` 模式会对每个 candidate 只保留 base64 最大的一张，`all` 模式会返回后端给出的全部图片。
+```
+AI 客户端（Claude Code / Cursor / ...）
+  → MCP Tool 调用
+    → antibanana-mcp
+      → Google Antigravity API
+        → Nano Banana 生图
+```
 
-默认行为完全模拟 Antigravity IDE：相同的请求体结构、UA、imageConfig 参数，不额外传输 AG IDE 未使用的字段。`imageSize` 等扩展参数仅在用户显式指定时才发送。
+## 特性
 
-## 环境要求
+- **零配置启动** — 自动读取本机已登录的 Antigravity 凭证，`npx -y antibanana-mcp` 即可运行；也支持通过凭证文件显式指定
+- **完全模拟 AG IDE** — 相同的请求体结构、UA（`antigravity/1.19.6`）、imageConfig 参数，默认行为与 Antigravity IDE 完全一致，不额外传输 AG IDE 未使用的字段
+- **分辨率可选** — 支持 512 / 1K / 2K / 4K 输出（默认 1K）。`imageSize` 仅在用户显式指定时才传给后端，保持请求指纹一致
+- **智能去缩略图** — 后端可能在同一 response 中返回缩略图和高清图，默认自动过滤，只保留每个 candidate 中最大的图
+- **代理支持** — 支持 HTTPS 代理，国内访问 Google 服务可用
+
+## 快速开始
+
+```bash
+npx -y antibanana-mcp
+```
+
+### 环境要求
 
 - Node.js 20+
 - 本机已登录 Antigravity，或一份可用的凭证 JSON
 
-## MCP 接入
+### Claude Desktop
 
-以 Claude Desktop 为例（`~/Library/Application Support/Claude/claude_desktop_config.json`）：
+`~/Library/Application Support/Claude/claude_desktop_config.json`：
 
 ```json
 {
@@ -36,7 +51,7 @@
 }
 ```
 
-需要代理（国内访问 Google 服务）：
+### 需要代理（国内访问 Google 服务）
 
 ```json
 {
@@ -53,6 +68,16 @@
 }
 ```
 
+## 工具
+
+| 工具 | 说明 |
+|------|------|
+| `list_models` | 列出当前账号可用的生图模型与配额信息 |
+| `check_quota` | 查询指定模型的剩余配额和重置时间 |
+| `generate_image` | 根据提示词生成图片，支持指定宽高比和分辨率（512 / 1K / 2K / 4K，默认 1K） |
+
+`generate_image` 可能返回多张图。默认 `largest` 模式会对每个 candidate 只保留 base64 最大的一张，设置 `ANTIBANANA_IMAGE_FILTER=all` 可返回后端给出的全部图片。
+
 ## 固化凭证（可选，更稳定）
 
 默认每次启动都会读取本机 Antigravity 数据库，首次 `generate_image` 时还会自动获取 project_id。
@@ -66,6 +91,10 @@
 }
 ```
 
+```bash
+chmod 600 ~/antigravity-creds.json
+```
+
 然后在 MCP 配置里指定：
 
 ```json
@@ -76,8 +105,7 @@
 }
 ```
 
-`refresh_token` 和 `project_id` 的值在首次 `generate_image` 成功后可从 MCP 启动日志里获取。
-如果使用本地凭证文件，建议限制权限，避免被其他进程读取：`chmod 600 ~/antigravity-creds.json`
+> `refresh_token` 和 `project_id` 的值在首次 `generate_image` 成功后可从 MCP 启动日志里获取。
 
 ## 环境变量
 
@@ -89,7 +117,7 @@
 | `ANTIBANANA_PROJECT_ID` | 显式指定 project_id（不设则首次生图时自动获取） |
 | `ANTIBANANA_TIMEOUT_MS` | 请求超时毫秒数（默认 120000） |
 | `ANTIBANANA_MAX_RETRIES` | 请求失败最大重试次数（默认 2） |
-| `ANTIBANANA_IMAGE_FILTER` | 返回图片筛选模式，`largest` 为默认值（单次响应含多个 candidate 时，每个 candidate 只保留 base64 最大的一张），`all` 为返回全部图片 |
+| `ANTIBANANA_IMAGE_FILTER` | 图片筛选模式：`largest`（默认）单次响应含多个 candidate 时只保留最大图，`all` 返回全部图片 |
 
 ## 本地开发
 
@@ -102,3 +130,7 @@ npm test
 ## 致谢
 
 感谢 [LINUX DO](https://linux.do) 社区的支持与推广。
+
+## License
+
+[ISC](LICENSE)
