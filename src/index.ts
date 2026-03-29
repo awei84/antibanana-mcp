@@ -184,6 +184,10 @@ async function main(): Promise<void> {
         aspectRatio: aspectRatioSchema
           .optional()
           .describe("图片宽高比，例如 1:1、16:9、9:16、4:3"),
+        imageSize: z
+          .enum(["512", "1K", "2K", "4K"])
+          .optional()
+          .describe("输出分辨率，支持 512、1K、2K、4K，默认 1K（注意 K 须大写）"),
       },
       outputSchema: {
         model: z.string(),
@@ -202,12 +206,13 @@ async function main(): Promise<void> {
         requestedAspectRatio: z.string().nullable(),
       },
     },
-    async ({ prompt, model, aspectRatio }) => {
+    async ({ prompt, model, aspectRatio, imageSize }) => {
       const modelId = model ?? DEFAULT_IMAGE_MODEL;
       const result = await client.generateImage({
         prompt,
         model: modelId,
         aspectRatio,
+        imageSize,
       });
 
       const images: Array<{

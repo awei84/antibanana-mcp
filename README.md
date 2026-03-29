@@ -10,7 +10,7 @@
 
 - `list_models`：列出当前账号可用的生图模型
 - `check_quota`：查看指定模型配额
-- `generate_image`：根据提示词生成图片
+- `generate_image`：根据提示词生成图片，支持指定宽高比和分辨率（512 / 1K / 2K / 4K，默认 1K）
 
 ## 环境要求
 
@@ -83,6 +83,7 @@
 | `ANTIBANANA_CREDENTIALS_PATH` | 凭证 JSON 路径（不设则自动读本机 Antigravity） |
 | `ANTIBANANA_PROJECT_ID` | 显式指定 project_id（不设则首次生图时自动获取） |
 | `ANTIBANANA_TIMEOUT_MS` | 请求超时毫秒数（默认 120000） |
+| `ANTIBANANA_MAX_RETRIES` | 请求失败最大重试次数（默认 2） |
 | `ANTIBANANA_IMAGE_FILTER` | 返回图片筛选模式，`largest` 为默认值（每个 candidate 只保留 base64 最大的一张），`all` 为返回全部图片 |
 
 ## 本地开发

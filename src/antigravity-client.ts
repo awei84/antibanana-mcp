@@ -77,6 +77,7 @@ export class AntigravityClient {
     prompt: string;
     model: string;
     aspectRatio?: string;
+    imageSize?: string;
   }): Promise<GenerateContentResponse> {
     const projectId = await this.projectIdResolver.getProjectId();
     const response = await this.transport.postJson("/v1internal:generateContent", {
@@ -94,6 +95,7 @@ export class AntigravityClient {
           imageConfig: {
             personGeneration: "ALLOW_ADULT",
             ...(params.aspectRatio ? { aspectRatio: params.aspectRatio } : {}),
+            ...(params.imageSize ? { imageSize: params.imageSize } : {}),
           },
         },
       },
