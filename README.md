@@ -119,6 +119,17 @@ chmod 600 ~/antigravity-creds.json
 | `ANTIBANANA_MAX_RETRIES` | 请求失败最大重试次数（默认 2） |
 | `ANTIBANANA_IMAGE_FILTER` | 图片筛选模式：`largest`（默认）单次响应含多个 candidate 时只保留最大图，`all` 返回全部图片 |
 
+## FAQ
+
+**为什么只支持 1:1 正方形？**
+不是的。Antigravity IDE 自身只生成 1:1 图片，但本项目通过 API 参数 `aspectRatio` 支持任意宽高比（如 `4:3`、`16:9`、`3:4` 等）。
+
+**为什么返回 base64 而不是直接保存文件？**
+返回 base64 图片是 MCP 协议的标准做法。AI 客户端收到后会直接内联显示，需要保存时 AI 可以一步写入任意路径。图片以 `type: "image"` 内容块返回，客户端按视觉 token 计算（约 1600 token/张），不会大量占用上下文。
+
+**如何更新到最新版本？**
+配置中使用 `antibanana-mcp@latest` 可自动获取最新版；也可手动执行 `npx clear-npx-cache` 清除缓存后重启。
+
 ## 本地开发
 
 ```bash

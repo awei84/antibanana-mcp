@@ -31,6 +31,7 @@ async function main(): Promise<void> {
   const credentialManager = CredentialManager.fromLoadedSource(
     loadedCredentialSource,
   );
+  console.error(`[${SERVER_NAME}] v${SERVER_VERSION}`);
   console.error(
     `[${SERVER_NAME}] 使用凭证: ${credentialManager.credentialPath} (${credentialManager.credentialPathSource})`,
   );
