@@ -12,6 +12,8 @@
 - `check_quota`：查看指定模型配额
 - `generate_image`：根据提示词生成图片，支持指定宽高比和分辨率（512 / 1K / 2K / 4K，默认 1K）
 
+`generate_image` 可能返回多张图。默认 `largest` 模式会对每个 candidate 只保留 base64 最大的一张，`all` 模式会返回后端给出的全部图片。
+
 默认行为完全模拟 Antigravity IDE：相同的请求体结构、UA、imageConfig 参数，不额外传输 AG IDE 未使用的字段。`imageSize` 等扩展参数仅在用户显式指定时才发送。
 
 ## 环境要求
@@ -75,6 +77,7 @@
 ```
 
 `refresh_token` 和 `project_id` 的值在首次 `generate_image` 成功后可从 MCP 启动日志里获取。
+如果使用本地凭证文件，建议限制权限，避免被其他进程读取：`chmod 600 ~/antigravity-creds.json`
 
 ## 环境变量
 
@@ -86,7 +89,7 @@
 | `ANTIBANANA_PROJECT_ID` | 显式指定 project_id（不设则首次生图时自动获取） |
 | `ANTIBANANA_TIMEOUT_MS` | 请求超时毫秒数（默认 120000） |
 | `ANTIBANANA_MAX_RETRIES` | 请求失败最大重试次数（默认 2） |
-| `ANTIBANANA_IMAGE_FILTER` | 返回图片筛选模式，`largest` 为默认值（每个 candidate 只保留 base64 最大的一张），`all` 为返回全部图片 |
+| `ANTIBANANA_IMAGE_FILTER` | 返回图片筛选模式，`largest` 为默认值（单次响应含多个 candidate 时，每个 candidate 只保留 base64 最大的一张），`all` 为返回全部图片 |
 
 ## 本地开发
 

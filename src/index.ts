@@ -2,6 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { createRequire } from "node:module";
 import { z } from "zod/v4";
 
 import { AntigravityTransport } from "./antigravity-transport.js";
@@ -14,6 +15,9 @@ import {
 import { ProjectIdResolver } from "./project-id-resolver.js";
 
 const SERVER_NAME = "antibanana-mcp";
+const { version: SERVER_VERSION } = createRequire(import.meta.url)(
+  "../package.json",
+) as { version: string };
 const DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image";
 const aspectRatioSchema = z
   .string()
@@ -79,7 +83,7 @@ async function main(): Promise<void> {
 
   const server = new McpServer({
     name: SERVER_NAME,
-    version: "0.1.0",
+    version: SERVER_VERSION,
   });
 
   server.registerTool(
