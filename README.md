@@ -91,3 +91,7 @@ npm install
 npm run build
 npm test
 ```
+
+## 致谢
+
+感谢 [LINUX DO](https://linux.do) 社区的支持与推广。
