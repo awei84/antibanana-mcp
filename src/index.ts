@@ -197,7 +197,13 @@ async function main(): Promise<void> {
         imageSize: z
           .enum(["512", "1K", "2K", "4K"])
           .optional()
-          .describe("Output resolution: 512, 1K, 2K, or 4K. Defaults to 1K if not specified. The K must be uppercase."),
+          .describe(
+            "Output resolution: 512, 1K, 2K, or 4K. Defaults to 1K if not specified. The K must be uppercase. " +
+            "IMPORTANT: This parameter is NOT part of the standard Antigravity IDE interface. " +
+            "Using non-default values (2K/4K) consumes more quota and may carry a risk of account flagging. " +
+            "Do NOT set this unless the user explicitly requests a specific resolution. " +
+            "When a user requests high resolution, inform them of the quota cost and potential risk before proceeding.",
+          ),
       },
       outputSchema: {
         model: z.string(),

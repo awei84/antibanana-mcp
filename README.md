@@ -12,6 +12,8 @@
 - `check_quota`：查看指定模型配额
 - `generate_image`：根据提示词生成图片，支持指定宽高比和分辨率（512 / 1K / 2K / 4K，默认 1K）
 
+默认行为完全模拟 Antigravity IDE：相同的请求体结构、UA、imageConfig 参数，不额外传输 AG IDE 未使用的字段。`imageSize` 等扩展参数仅在用户显式指定时才发送。
+
 ## 环境要求
 
 - Node.js 20+
