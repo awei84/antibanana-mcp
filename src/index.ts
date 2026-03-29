@@ -85,7 +85,10 @@ async function main(): Promise<void> {
   server.registerTool(
     "list_models",
     {
-      description: "列出 Antigravity 当前账号可用的生图模型与配额信息",
+      description:
+        "List all available image generation models and their quota information for the current Antigravity account. " +
+        "Call this tool when you need to discover which models are available, check their display names, or verify remaining quota before generating images. " +
+        "This is useful when the user asks about available models or when you need to select a specific model for image generation.",
       outputSchema: {
         imageModels: z.array(
           z.object({
@@ -129,12 +132,15 @@ async function main(): Promise<void> {
   server.registerTool(
     "check_quota",
     {
-      description: "查询指定生图模型的剩余配额",
+      description:
+        "Check the remaining image generation quota for a specific model. " +
+        "Call this tool before generating images to ensure sufficient quota remains, or when the user asks about their usage limits. " +
+        "The quota resets periodically (typically every few hours). Returns the remaining fraction (0.0 to 1.0) and the next reset time.",
       inputSchema: {
         model: z
           .string()
           .optional()
-          .describe("模型 ID，默认查询 gemini-3.1-flash-image"),
+          .describe("Model ID to check quota for. Defaults to gemini-3.1-flash-image if not specified."),
       },
       outputSchema: {
         model: z.string(),
@@ -174,20 +180,24 @@ async function main(): Promise<void> {
   server.registerTool(
     "generate_image",
     {
-      description: "调用 Antigravity 的图像生成能力生成图片",
+      description:
+        "Generate an image or edit existing images based on a text prompt. The resulting image will be returned as base64-encoded data. " +
+        "You can use this tool to generate user interfaces and iterate on a design with the user for an application or website that you are building. " +
+        "When creating UI designs, generate only the interface itself without surrounding device frames (laptops, phones, tablets, etc.) unless the user explicitly requests them. " +
+        "You can also use this tool to generate assets, illustrations, icons, diagrams, or any visual content described by the user.",
       inputSchema: {
-        prompt: z.string().min(1).describe("生图提示词"),
+        prompt: z.string().min(1).describe("Text description of the image to generate. Be specific and detailed for best results."),
         model: z
           .string()
           .optional()
-          .describe("模型 ID，默认使用 gemini-3.1-flash-image"),
+          .describe("Model ID for image generation. Defaults to gemini-3.1-flash-image."),
         aspectRatio: aspectRatioSchema
           .optional()
-          .describe("图片宽高比，例如 1:1、16:9、9:16、4:3"),
+          .describe("Aspect ratio of the output image, e.g. 1:1, 16:9, 9:16, 4:3."),
         imageSize: z
           .enum(["512", "1K", "2K", "4K"])
           .optional()
-          .describe("输出分辨率，支持 512、1K、2K、4K，默认 1K（注意 K 须大写）"),
+          .describe("Output resolution: 512, 1K, 2K, or 4K. Defaults to 1K if not specified. The K must be uppercase."),
       },
       outputSchema: {
         model: z.string(),
