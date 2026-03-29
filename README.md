@@ -83,6 +83,7 @@
 | `ANTIBANANA_CREDENTIALS_PATH` | 凭证 JSON 路径（不设则自动读本机 Antigravity） |
 | `ANTIBANANA_PROJECT_ID` | 显式指定 project_id（不设则首次生图时自动获取） |
 | `ANTIBANANA_TIMEOUT_MS` | 请求超时毫秒数（默认 120000） |
+| `ANTIBANANA_IMAGE_FILTER` | 返回图片筛选模式，`largest` 为默认值（每个 candidate 只保留 base64 最大的一张），`all` 为返回全部图片 |
 
 ## 本地开发
 

@@ -7,6 +7,10 @@ import { z } from "zod/v4";
 import { AntigravityTransport } from "./antigravity-transport.js";
 import { AntigravityClient } from "./antigravity-client.js";
 import { CredentialManager, loadCredentialSource } from "./credentials.js";
+import {
+  parseImageFilterMode,
+  selectImagesForMcpResponse,
+} from "./image-selection.js";
 import { ProjectIdResolver } from "./project-id-resolver.js";
 
 const SERVER_NAME = "antibanana-mcp";
@@ -69,6 +73,9 @@ async function main(): Promise<void> {
       "ANTIBANANA_MODEL_CACHE_TTL_MS",
     ),
   });
+  const imageFilterMode = parseImageFilterMode(
+    process.env.ANTIBANANA_IMAGE_FILTER,
+  );
 
   const server = new McpServer({
     name: SERVER_NAME,
@@ -232,7 +239,8 @@ async function main(): Promise<void> {
         throw new Error("Antigravity 未返回任何图片数据");
       }
 
-      const structuredImages = images.map(
+      const selectedImages = selectImagesForMcpResponse(images, imageFilterMode);
+      const structuredImages = selectedImages.map(
         ({ candidateIndex, partIndex, mimeType }) => ({
           candidateIndex,
           partIndex,
@@ -241,7 +249,7 @@ async function main(): Promise<void> {
       );
 
       return {
-        content: images.map(({ mimeType, data }) => ({
+        content: selectedImages.map(({ mimeType, data }) => ({
           type: "image" as const,
           mimeType,
           data,
@@ -252,7 +260,7 @@ async function main(): Promise<void> {
           responseId: result.response.responseId ?? null,
           traceId: result.traceId ?? null,
           finishReasons,
-          imageCount: images.length,
+          imageCount: selectedImages.length,
           images: structuredImages,
           requestedAspectRatio: aspectRatio ?? null,
         },
