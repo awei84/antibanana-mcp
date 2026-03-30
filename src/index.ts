@@ -189,9 +189,10 @@ async function main(): Promise<void> {
         "Generate an image or edit existing images based on a text prompt. The resulting image will be returned as base64-encoded data. " +
         "You can use this tool to generate user interfaces and iterate on a design with the user for an application or website that you are building. " +
         "When creating UI designs, generate only the interface itself without surrounding device frames (laptops, phones, tablets, etc.) unless the user explicitly requests them. " +
-        "You can also use this tool to generate assets, illustrations, icons, diagrams, or any visual content described by the user.",
+        "You can also use this tool to generate assets, illustrations, icons, diagrams, or any visual content described by the user. " +
+        "IMPORTANT: Always write the prompt in English for best results, even if the user's request is in another language.",
       inputSchema: {
-        prompt: z.string().min(1).describe("Text description of the image to generate. Be specific and detailed for best results."),
+        prompt: z.string().min(1).describe("Text description of the image to generate. Must be written in English. Be specific and detailed for best results."),
         model: z
           .string()
           .optional()
