@@ -3,6 +3,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createRequire } from "node:module";
+import { writeFile, mkdir } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { homedir } from "node:os";
 import { z } from "zod/v4";
 
 import { AntigravityTransport } from "./antigravity-transport.js";
@@ -210,6 +213,14 @@ async function main(): Promise<void> {
             "Do NOT set this unless the user explicitly requests a specific resolution. " +
             "When a user requests high resolution, inform them of the quota cost and potential risk before proceeding.",
           ),
+        outputPath: z
+          .string()
+          .optional()
+          .describe(
+            "Optional local file path to save the generated image (e.g. ~/Desktop/puppy.jpg). " +
+            "Supports ~ for home directory. If provided, the image is saved to disk and the saved path is returned. " +
+            "Use this when the user asks to save the image to a specific location.",
+          ),
       },
       outputSchema: {
         model: z.string(),
@@ -226,9 +237,10 @@ async function main(): Promise<void> {
           }),
         ),
         requestedAspectRatio: z.string().nullable(),
+        savedPaths: z.array(z.string()).optional(),
       },
     },
-    async ({ prompt, model, aspectRatio, imageSize }) => {
+    async ({ prompt, model, aspectRatio, imageSize, outputPath }) => {
       const modelId = model ?? DEFAULT_IMAGE_MODEL;
       const result = await client.generateImage({
         prompt,
@@ -267,6 +279,26 @@ async function main(): Promise<void> {
       }
 
       const selectedImages = selectImagesForMcpResponse(images, imageFilterMode);
+
+      // 如果指定了 outputPath，将图片保存到本地磁盘
+      const savedPaths: string[] = [];
+      if (outputPath) {
+        const expandedBase = outputPath.startsWith("~/")
+          ? resolve(homedir(), outputPath.slice(2))
+          : resolve(outputPath);
+
+        for (let i = 0; i < selectedImages.length; i++) {
+          const img = selectedImages[i];
+          // 多张图时自动加序号后缀，单张保持原文件名
+          const filePath = selectedImages.length > 1
+            ? expandedBase.replace(/(\.\w+)$/, `_${i + 1}$1`)
+            : expandedBase;
+          await mkdir(dirname(filePath), { recursive: true });
+          await writeFile(filePath, Buffer.from(img.data, "base64"));
+          savedPaths.push(filePath);
+        }
+      }
+
       const structuredImages = selectedImages.map(
         ({ candidateIndex, partIndex, mimeType }) => ({
           candidateIndex,
@@ -290,6 +322,7 @@ async function main(): Promise<void> {
           imageCount: selectedImages.length,
           images: structuredImages,
           requestedAspectRatio: aspectRatio ?? null,
+          ...(savedPaths.length > 0 ? { savedPaths } : {}),
         },
       };
     },
