@@ -23,6 +23,7 @@ AI Client (Claude Code / Cursor / ...)
 - **Faithful AG IDE simulation** — Identical request body, UA (`antigravity/1.19.6`), and imageConfig parameters. Default behavior matches the Antigravity IDE exactly — no extra fields are sent beyond what AG IDE uses
 - **Resolution control** — Supports 512 / 1K / 2K / 4K output (defaults to 1K). The `imageSize` parameter is only sent to the backend when explicitly specified, keeping the request fingerprint consistent
 - **Smart thumbnail filtering** — The backend may return both thumbnails and full-resolution images in a single response. By default, only the largest image per candidate is kept
+- **Local save** — Use the `outputPath` parameter to save generated images directly to disk (supports `~` paths) without any extra scripting
 - **Proxy support** — HTTPS proxy supported for regions that need it
 
 ## Quick Start
@@ -74,7 +75,17 @@ npx -y antibanana-mcp
 |------|-------------|
 | `list_models` | List available image generation models and their quota info |
 | `check_quota` | Check remaining quota and reset time for a specific model |
-| `generate_image` | Generate images from text prompts with optional aspect ratio and resolution (512 / 1K / 2K / 4K, default 1K) |
+| `generate_image` | Generate images from text prompts with optional aspect ratio, resolution, and local save path |
+
+`generate_image` parameters:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `prompt` | string | ✅ | Image description. Write in English for best results |
+| `aspectRatio` | string | — | Aspect ratio, e.g. `1:1`, `16:9`, `4:3` |
+| `model` | string | — | Model ID, defaults to `gemini-3.1-flash-image` |
+| `imageSize` | string | — | Resolution: `512` / `1K` / `2K` / `4K`, default 1K (non-standard param — AI will warn before using) |
+| `outputPath` | string | — | Local file path to save the image, e.g. `~/Desktop/cat.jpg`. Supports `~`. When set, the image is written to disk and the saved path is returned |
 
 `generate_image` may return multiple images. The default `largest` mode keeps only the largest image per candidate. Set `ANTIBANANA_IMAGE_FILTER=all` to return all images from the backend.
 
