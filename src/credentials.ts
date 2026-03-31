@@ -139,7 +139,10 @@ async function readCredentialFile(credentialPath: string): Promise<CredentialFil
     throw error;
   }
 
-  return credentialFileSchema.parse(JSON.parse(raw));
+  const parsed = JSON.parse(raw);
+  // 支持数组格式（多账号文件），取第一个元素
+  const data = Array.isArray(parsed) ? parsed[0] : parsed;
+  return credentialFileSchema.parse(data);
 }
 
 function extractAccessToken(
