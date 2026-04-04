@@ -1,6 +1,6 @@
 {
   "name": "antibanana-mcp",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "通过 MCP 封装 Google Antigravity Nano Banana 生图能力",
   "type": "module",
   "main": "./dist/index.js",

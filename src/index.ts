@@ -15,6 +15,7 @@ import {
   parseImageFilterMode,
   selectImagesForMcpResponse,
 } from "./image-selection.js";
+import { buildGenerateImageToolResponse } from "./generate-image-response.js";
 import { ProjectIdResolver } from "./project-id-resolver.js";
 
 const SERVER_NAME = "antibanana-mcp";
@@ -189,12 +190,16 @@ async function main(): Promise<void> {
     "generate_image",
     {
       description:
-        "Generate an image or edit existing images based on a text prompt. The resulting image will be returned as base64-encoded data. " +
+        "Generate an image or edit existing images based on a text prompt. By default, the resulting image will be returned as base64-encoded data. " +
         "You can use this tool to generate user interfaces and iterate on a design with the user for an application or website that you are building. " +
         "When creating UI designs, generate only the interface itself without surrounding device frames (laptops, phones, tablets, etc.) unless the user explicitly requests them. " +
         "You can also use this tool to generate assets, illustrations, icons, diagrams, or any visual content described by the user. " +
         "IMPORTANT: Always write the prompt in English for best results, even if the user's request is in another language. " +
-        "IMPORTANT: If the user asks to save the image locally or mentions a file path or desktop, you MUST set the outputPath parameter (e.g. ~/Desktop/image.jpg). The MCP server will write the file to disk directly — do NOT write it yourself.",
+        "IMPORTANT: Unless the user explicitly wants to view the image inline in the chat, or explicitly does not want a local file written, ALWAYS provide outputPath to avoid returning large base64 image data in context. " +
+        "IMPORTANT: If the user did not specify a save location, choose a reasonable unique local path such as ~/Desktop/antibanana-image.png or a similar descriptive filename. " +
+        "IMPORTANT: If the user asks to save the image locally or mentions a file path or desktop, you MUST set the outputPath parameter (e.g. ~/Desktop/image.jpg). " +
+        "When outputPath is provided, the MCP server writes the file to disk and returns only text plus metadata instead of base64 image data, which avoids pushing large image payloads into context. " +
+        "If outputPath is omitted, the image bytes are returned inline and may consume a large amount of context. Do NOT write the file yourself.",
       inputSchema: {
         prompt: z.string().min(1).describe("Text description of the image to generate. Must be written in English. Be specific and detailed for best results."),
         model: z
@@ -219,8 +224,11 @@ async function main(): Promise<void> {
           .optional()
           .describe(
             "Optional local file path to save the generated image (e.g. ~/Desktop/puppy.jpg). " +
-            "Supports ~ for home directory. If provided, the image is saved to disk and the saved path is returned. " +
-            "Use this when the user asks to save the image to a specific location.",
+            "Supports ~ for home directory. Default to providing this unless the caller explicitly needs inline base64 image data or explicitly does not want a local file written. " +
+            "If the user did not specify a save location, choose a reasonable unique local path such as ~/Desktop/antibanana-image.png. " +
+            "If provided, the image is saved to disk and the tool returns text confirmation plus metadata instead of base64 image data, which avoids heavy context usage. " +
+            "If omitted, the full image bytes are returned inline and may consume a very large amount of context. " +
+            "Use this whenever the user asks to save the image to a specific location.",
           ),
       },
       outputSchema: {
@@ -300,32 +308,16 @@ async function main(): Promise<void> {
         }
       }
 
-      const structuredImages = selectedImages.map(
-        ({ candidateIndex, partIndex, mimeType }) => ({
-          candidateIndex,
-          partIndex,
-          mimeType,
-        }),
-      );
-
-      return {
-        content: selectedImages.map(({ mimeType, data }) => ({
-          type: "image" as const,
-          mimeType,
-          data,
-        })),
-        structuredContent: {
-          model: modelId,
-          modelVersion: result.response.modelVersion ?? null,
-          responseId: result.response.responseId ?? null,
-          traceId: result.traceId ?? null,
-          finishReasons,
-          imageCount: selectedImages.length,
-          images: structuredImages,
-          requestedAspectRatio: aspectRatio ?? null,
-          ...(savedPaths.length > 0 ? { savedPaths } : {}),
-        },
-      };
+      return buildGenerateImageToolResponse({
+        selectedImages,
+        savedPaths,
+        modelId,
+        modelVersion: result.response.modelVersion ?? null,
+        responseId: result.response.responseId ?? null,
+        traceId: result.traceId ?? null,
+        finishReasons,
+        requestedAspectRatio: aspectRatio ?? null,
+      });
     },
   );
 

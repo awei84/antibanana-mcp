@@ -20,7 +20,7 @@ AI Client (Claude Code / Cursor / ...)
 ## Features
 
 - **Zero config** — Automatically reads local Antigravity credentials. Just run `npx -y antibanana-mcp`. Also supports explicit credential files
-- **Faithful AG IDE simulation** — Identical request body, UA (`antigravity/1.19.6`), and imageConfig parameters. Default behavior matches the Antigravity IDE exactly — no extra fields are sent beyond what AG IDE uses
+- **Faithful AG IDE simulation** — Identical request body and imageConfig parameters. By default, the server fetches the latest UA version from the Antigravity releases endpoint and combines it with the current platform, keeping requests aligned with the current AG IDE without sending extra fields AG IDE does not use
 - **Resolution control** — Supports 512 / 1K / 2K / 4K output (defaults to 1K). The `imageSize` parameter is only sent to the backend when explicitly specified, keeping the request fingerprint consistent
 - **Smart thumbnail filtering** — The backend may return both thumbnails and full-resolution images in a single response. By default, only the largest image per candidate is kept
 - **Local save** — Use the `outputPath` parameter to save generated images directly to disk (supports `~` paths) without any extra scripting
@@ -85,9 +85,11 @@ npx -y antibanana-mcp
 | `aspectRatio` | string | — | Aspect ratio, e.g. `1:1`, `16:9`, `4:3` |
 | `model` | string | — | Model ID, defaults to `gemini-3.1-flash-image` |
 | `imageSize` | string | — | Resolution: `512` / `1K` / `2K` / `4K`, default 1K (non-standard param — AI will warn before using) |
-| `outputPath` | string | — | Local file path to save the image, e.g. `~/Desktop/cat.jpg`. Supports `~`. When set, the image is written to disk and the saved path is returned |
+| `outputPath` | string | — | Local file path to save the image, e.g. `~/Desktop/cat.jpg`. Supports `~`. Strongly recommended by default; when set, the image is written to disk and the tool returns only text confirmation plus metadata instead of base64 image data, avoiding heavy context usage |
 
 `generate_image` may return multiple images. The default `largest` mode keeps only the largest image per candidate. Set `ANTIBANANA_IMAGE_FILTER=all` to return all images from the backend.
+
+If `outputPath` is omitted, the tool returns the full base64 image inline. This is useful for clients that need immediate inline display, but it can consume a large amount of context. Unless the user explicitly wants to view the image inline in chat, or explicitly does not want a local file written, you should always provide `outputPath`. If the user did not specify a save location, prefer a reasonable local path such as `~/Desktop/antibanana-image.png`.
 
 ## Pinned Credentials (Optional)
 
@@ -126,6 +128,7 @@ Then add to your MCP config:
 | `ANTIBANANA_PROXY_URL` | Proxy for API requests |
 | `ANTIBANANA_CREDENTIALS_PATH` | Path to credentials JSON (auto-reads local Antigravity if not set) |
 | `ANTIBANANA_PROJECT_ID` | Explicit project_id (auto-fetched on first image generation if not set) |
+| `ANTIBANANA_USER_AGENT` | Explicitly override the default User-Agent (otherwise the latest Antigravity releases version is used automatically) |
 | `ANTIBANANA_TIMEOUT_MS` | Request timeout in ms (default: 120000) |
 | `ANTIBANANA_MAX_RETRIES` | Max retry count on failure (default: 2) |
 | `ANTIBANANA_IMAGE_FILTER` | Image filter mode: `largest` (default) keeps only the largest image per candidate, `all` returns everything |

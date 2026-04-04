@@ -1,10 +1,10 @@
 import https from "node:https";
 import type { Agent as HttpAgent } from "node:http";
-import os from "node:os";
 
 import { HttpsProxyAgent } from "https-proxy-agent";
 
 import type { CredentialManager } from "./credentials.js";
+import { resolveDefaultAntigravityUserAgent } from "./antigravity-user-agent.js";
 
 const DEFAULT_BASE_URL = "https://cloudcode-pa.googleapis.com";
 const DEFAULT_TIMEOUT_MS = 120_000;
@@ -43,7 +43,7 @@ export class AntigravityTransportError extends Error {
 export class AntigravityTransport {
   private readonly baseUrl: URL;
   private readonly credentialManager: CredentialManager;
-  private readonly userAgent: string;
+  private readonly userAgentOverride?: string;
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
   private readonly authRetryLimit: number;
@@ -60,7 +60,7 @@ export class AntigravityTransport {
   }) {
     this.credentialManager = options.credentialManager;
     this.baseUrl = new URL(options.baseUrl ?? DEFAULT_BASE_URL);
-    this.userAgent = options.userAgent ?? buildDefaultUserAgent();
+    this.userAgentOverride = options.userAgent;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.authRetryLimit = options.authRetryLimit ?? DEFAULT_AUTH_RETRY_LIMIT;
@@ -103,6 +103,8 @@ export class AntigravityTransport {
     const accessToken = await this.credentialManager.getAccessToken();
     const payload = JSON.stringify(body);
     const requestUrl = new URL(pathname, this.baseUrl);
+    const userAgent =
+      this.userAgentOverride ?? await resolveDefaultAntigravityUserAgent();
 
     return await new Promise<unknown>((resolve, reject) => {
       const request = https.request(
@@ -114,7 +116,7 @@ export class AntigravityTransport {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            "User-Agent": this.userAgent,
+            "User-Agent": userAgent,
             "Content-Type": "application/json",
             Connection: "close",
             "Content-Length": Buffer.byteLength(payload),
@@ -184,10 +186,6 @@ export class AntigravityTransport {
       request.end();
     });
   }
-}
-
-function buildDefaultUserAgent(): string {
-  return `antigravity/1.19.6 ${os.platform()}/${os.arch()}`;
 }
 
 function parseRetryAfterMs(
