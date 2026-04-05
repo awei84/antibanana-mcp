@@ -4,8 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createRequire } from "node:module";
 import { writeFile, mkdir } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { homedir } from "node:os";
+import { dirname } from "node:path";
 import { z } from "zod/v4";
 
 import { AntigravityTransport } from "./antigravity-transport.js";
@@ -16,6 +15,7 @@ import {
   selectImagesForMcpResponse,
 } from "./image-selection.js";
 import { buildGenerateImageToolResponse } from "./generate-image-response.js";
+import { resolveOutputPath } from "./output-path.js";
 import { ProjectIdResolver } from "./project-id-resolver.js";
 
 const SERVER_NAME = "antibanana-mcp";
@@ -196,10 +196,10 @@ async function main(): Promise<void> {
         "You can also use this tool to generate assets, illustrations, icons, diagrams, or any visual content described by the user. " +
         "IMPORTANT: Always write the prompt in English for best results, even if the user's request is in another language. " +
         "IMPORTANT: Unless the user explicitly wants to view the image inline in the chat, or explicitly does not want a local file written, ALWAYS provide outputPath to avoid returning large base64 image data in context. " +
-        "IMPORTANT: If the user did not specify a save location, choose a reasonable unique local path such as ~/Desktop/antibanana-image.png or a similar descriptive filename. " +
-        "IMPORTANT: If the user asks to save the image locally or mentions a file path or desktop, you MUST set the outputPath parameter (e.g. ~/Desktop/image.jpg). " +
+        "IMPORTANT: If the user did not specify a save location, choose a reasonable unique local path such as ~/Desktop/antibanana-image.png, or on Windows C:\\Users\\<user>\\Desktop\\antibanana-image.png. " +
+        "IMPORTANT: If the user asks to save the image locally or mentions a file path or desktop, you MUST set the outputPath parameter (e.g. ~/Desktop/image.jpg or C:\\Users\\<user>\\Desktop\\image.jpg on Windows). " +
         "When outputPath is provided, the MCP server writes the file to disk and returns only text plus metadata instead of base64 image data, which avoids pushing large image payloads into context. " +
-        "If outputPath is omitted, the image bytes are returned inline and may consume a large amount of context. Do NOT write the file yourself.",
+        "If outputPath is omitted, the image bytes are returned inline and may consume a large amount of context. Path resolution happens on the MCP server host. Do NOT write the file yourself.",
       inputSchema: {
         prompt: z.string().min(1).describe("Text description of the image to generate. Must be written in English. Be specific and detailed for best results."),
         model: z
@@ -223,12 +223,12 @@ async function main(): Promise<void> {
           .string()
           .optional()
           .describe(
-            "Optional local file path to save the generated image (e.g. ~/Desktop/puppy.jpg). " +
-            "Supports ~ for home directory. Default to providing this unless the caller explicitly needs inline base64 image data or explicitly does not want a local file written. " +
-            "If the user did not specify a save location, choose a reasonable unique local path such as ~/Desktop/antibanana-image.png. " +
+            "Optional local file path to save the generated image (e.g. ~/Desktop/puppy.jpg or C:\\Users\\Alice\\Desktop\\puppy.jpg on Windows). " +
+            "Supports ~/ and ~\\ for the server host home directory. Default to providing this unless the caller explicitly needs inline base64 image data or explicitly does not want a local file written. " +
+            "If the user did not specify a save location, choose a reasonable unique local path such as ~/Desktop/antibanana-image.png, or a Windows Desktop path when the MCP server runs on Windows. " +
             "If provided, the image is saved to disk and the tool returns text confirmation plus metadata instead of base64 image data, which avoids heavy context usage. " +
             "If omitted, the full image bytes are returned inline and may consume a very large amount of context. " +
-            "Use this whenever the user asks to save the image to a specific location.",
+            "Path resolution is relative to the MCP server runtime environment. Use this whenever the user asks to save the image to a specific location.",
           ),
       },
       outputSchema: {
@@ -292,9 +292,7 @@ async function main(): Promise<void> {
       // 如果指定了 outputPath，将图片保存到本地磁盘
       const savedPaths: string[] = [];
       if (outputPath) {
-        const expandedBase = outputPath.startsWith("~/")
-          ? resolve(homedir(), outputPath.slice(2))
-          : resolve(outputPath);
+        const expandedBase = resolveOutputPath(outputPath);
 
         for (let i = 0; i < selectedImages.length; i++) {
           const img = selectedImages[i];

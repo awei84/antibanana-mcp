@@ -23,7 +23,7 @@ AI 客户端（Claude Code / Cursor / ...）
 - **完全模拟 AG IDE** — 相同的请求体结构和 imageConfig 参数；默认会从 Antigravity releases 接口获取最新 UA 版本并拼接当前平台信息，尽量保持与当前 AG IDE 一致，不额外传输 AG IDE 未使用的字段
 - **分辨率可选** — 支持 512 / 1K / 2K / 4K 输出（默认 1K）。`imageSize` 仅在用户显式指定时才传给后端，保持请求指纹一致
 - **智能去缩略图** — 后端可能在同一 response 中返回缩略图和高清图，默认自动过滤，只保留每个 candidate 中最大的图
-- **本地保存** — 通过 `outputPath` 参数可将生成的图片直接保存到本地磁盘（支持 `~` 路径），无需额外脚本
+- **本地保存** — 通过 `outputPath` 参数可将生成的图片直接保存到本地磁盘（支持 `~/`、`~\` 和 Windows 绝对路径），无需额外脚本
 - **代理支持** — 支持 HTTPS 代理，国内访问 Google 服务可用
 
 ## 快速开始
@@ -85,11 +85,13 @@ npx -y antibanana-mcp
 | `aspectRatio` | string | — | 宽高比，如 `1:1`、`16:9`、`4:3` 等 |
 | `model` | string | — | 模型 ID，默认 `gemini-3.1-flash-image` |
 | `imageSize` | string | — | 分辨率：`512` / `1K` / `2K` / `4K`，默认 1K（非标参数，AI 会在使用前预警） |
-| `outputPath` | string | — | 本地保存路径，如 `~/Desktop/cat.jpg`。支持 `~`。强烈建议默认传入；指定后图片会写入磁盘，并且工具只返回文本确认和元数据，不再回传 base64 图片数据，从而避免严重占用上下文 |
+| `outputPath` | string | — | 本地保存路径，如 `~/Desktop/cat.jpg` 或 `C:\Users\Alice\Desktop\cat.jpg`。支持 `~/`、`~\` 和 Windows 绝对路径。强烈建议默认传入；指定后图片会写入磁盘，并且工具只返回文本确认和元数据，不再回传 base64 图片数据，从而避免严重占用上下文 |
 
 `generate_image` 可能返回多张图。默认 `largest` 模式会对每个 candidate 只保留 base64 最大的一张，设置 `ANTIBANANA_IMAGE_FILTER=all` 可返回后端给出的全部图片。
 
-如果不传 `outputPath`，工具会内联返回完整 base64 图片，适合需要直接显示图片的客户端，但会显著增加上下文占用。除非你明确需要在聊天里内联查看图片，或者明确不希望写本地文件，否则应始终传入 `outputPath`。如果用户没有指定保存位置，推荐默认使用类似 `~/Desktop/antibanana-image.png` 这样的本地路径。
+如果不传 `outputPath`，工具会内联返回完整 base64 图片，适合需要直接显示图片的客户端，但会显著增加上下文占用。除非你明确需要在聊天里内联查看图片，或者明确不希望写本地文件，否则应始终传入 `outputPath`。如果用户没有指定保存位置，推荐默认使用类似 `~/Desktop/antibanana-image.png` 的本地路径；如果 MCP server 运行在 Windows，也可以直接使用 `C:\Users\<用户名>\Desktop\antibanana-image.png`。
+
+注意：`outputPath` 始终按 MCP server 自身的运行环境解析。如果 server 跑在 WSL，传入 `C:\...` 会自动转换成 `/mnt/<drive>/...`；如果 server 跑在普通 Linux/macOS，直接传 Windows 绝对路径会报真实错误，而不会静默降级到错误目录。
 
 ## 固化凭证（可选，更稳定）
 
