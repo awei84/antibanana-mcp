@@ -5,3 +5,5 @@ dist/
 localdocs/
 .claude/
 .ace-tool/
+.intent/
+.DS_Store

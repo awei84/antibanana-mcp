@@ -414,6 +414,111 @@ test("generateImage 会通过 resolver 注入 project_id，并透传 aspectRatio
   });
 });
 
+test("generateImage 传入 images 时会按 [images..., text] 顺序组装 parts", async () => {
+  const client = new AntigravityClient({
+    transport: {
+      postJson: async (_pathname, body) => {
+        capturedBody = body;
+        return generateResponse;
+      },
+    } as never,
+    projectIdResolver: {
+      getProjectId: async () => "demo-project",
+    } as never,
+  });
+
+  let capturedBody: unknown;
+  await client.generateImage({
+    prompt: "turn this into a watercolor poster",
+    model: "gemini-3.1-flash-image",
+    images: [
+      {
+        mimeType: "image/png",
+        data: "base64-image-1",
+      },
+      {
+        mimeType: "image/jpeg",
+        data: "base64-image-2",
+      },
+    ],
+  });
+
+  assert.deepEqual(capturedBody, {
+    model: "gemini-3.1-flash-image",
+    project: "demo-project",
+    request: {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              inlineData: {
+                mimeType: "image/png",
+                data: "base64-image-1",
+              },
+            },
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: "base64-image-2",
+              },
+            },
+            {
+              text: "turn this into a watercolor poster",
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"],
+        imageConfig: {
+          personGeneration: "ALLOW_ADULT",
+        },
+      },
+    },
+  });
+});
+
+test("generateImage 传入空 images 数组时仍只发送 text part", async () => {
+  const client = new AntigravityClient({
+    transport: {
+      postJson: async (_pathname, body) => {
+        capturedBody = body;
+        return generateResponse;
+      },
+    } as never,
+    projectIdResolver: {
+      getProjectId: async () => "demo-project",
+    } as never,
+  });
+
+  let capturedBody: unknown;
+  await client.generateImage({
+    prompt: "draw a cat",
+    model: "gemini-3.1-flash-image",
+    images: [],
+  });
+
+  assert.deepEqual(capturedBody, {
+    model: "gemini-3.1-flash-image",
+    project: "demo-project",
+    request: {
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: "draw a cat" }],
+        },
+      ],
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"],
+        imageConfig: {
+          personGeneration: "ALLOW_ADULT",
+        },
+      },
+    },
+  });
+});
+
 test("配置 proxyUrl 时会使用代理 agent", () => {
   const transport = new AntigravityTransport({
     credentialManager: {

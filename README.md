@@ -22,6 +22,7 @@ AI 客户端（Claude Code / Cursor / ...）
 - **零配置启动** — 自动读取本机已登录的 Antigravity 凭证，`npx -y antibanana-mcp` 即可运行；也支持通过凭证文件显式指定
 - **完全模拟 AG IDE** — 相同的请求体结构和 imageConfig 参数；默认会从 Antigravity releases 接口获取最新 UA 版本并拼接当前平台信息，尽量保持与当前 AG IDE 一致，不额外传输 AG IDE 未使用的字段
 - **分辨率可选** — 支持 512 / 1K / 2K / 4K 输出（默认 1K）。`imageSize` 仅在用户显式指定时才传给后端，保持请求指纹一致
+- **输入图编辑** — 支持通过 `imagePaths` 传入最多 3 张本地图片做编辑或合成，服务端会校验绝对路径和 PNG/JPEG/WebP 文件头，并兼容 WSL 下的 Windows 绝对路径
 - **智能去缩略图** — 后端可能在同一 response 中返回缩略图和高清图，默认自动过滤，只保留每个 candidate 中最大的图
 - **本地保存** — 通过 `outputPath` 参数可将生成的图片直接保存到本地磁盘（支持 `~/`、`~\` 和 Windows 绝对路径），无需额外脚本
 - **代理支持** — 支持 HTTPS 代理，国内访问 Google 服务可用
@@ -75,7 +76,7 @@ npx -y antibanana-mcp
 |------|------|
 | `list_models` | 列出当前账号可用的生图模型与配额信息 |
 | `check_quota` | 查询指定模型的剩余配额和重置时间 |
-| `generate_image` | 根据提示词生成图片，支持指定宽高比、分辨率（512 / 1K / 2K / 4K，默认 1K）和本地保存路径 |
+| `generate_image` | 根据提示词生成图片或编辑本地图片，支持指定宽高比、分辨率（512 / 1K / 2K / 4K，默认 1K）、输入图路径和本地保存路径 |
 
 `generate_image` 参数说明：
 
@@ -85,9 +86,14 @@ npx -y antibanana-mcp
 | `aspectRatio` | string | — | 宽高比，如 `1:1`、`16:9`、`4:3` 等 |
 | `model` | string | — | 模型 ID，默认 `gemini-3.1-flash-image` |
 | `imageSize` | string | — | 分辨率：`512` / `1K` / `2K` / `4K`，默认 1K（非标参数，AI 会在使用前预警） |
+| `imagePaths` | string[] | — | 最多 3 个本地输入图绝对路径，用于编辑或合成。MCP server 会读取本地文件，校验 PNG/JPEG/WebP 文件头后再上传到后端；单张最大 20MB |
 | `outputPath` | string | — | 本地保存路径，如 `~/Desktop/cat.jpg` 或 `C:\Users\Alice\Desktop\cat.jpg`。支持 `~/`、`~\` 和 Windows 绝对路径。强烈建议默认传入；指定后图片会写入磁盘，并且工具只返回文本确认和元数据，不再回传 base64 图片数据，从而避免严重占用上下文 |
 
 `generate_image` 可能返回多张图。默认 `largest` 模式会对每个 candidate 只保留 base64 最大的一张，设置 `ANTIBANANA_IMAGE_FILTER=all` 可返回后端给出的全部图片。
+
+如果传了 `imagePaths`，请求体会按 `[images..., text]` 顺序发送给 Antigravity，用法与 AG IDE 的本地图片编辑模式一致。`imagePaths` 只接受绝对路径；相对路径会直接报错，避免在 `npx` 或不同工作目录下解析到错误位置。
+
+注意：`imagePaths` 也按 MCP server 自身的运行环境解析。如果 server 跑在 WSL，传入 `C:\...` 会自动转换成 `/mnt/<drive>/...` 后读取；如果 server 跑在普通 Linux/macOS，直接传 Windows 绝对路径会报真实错误，而不会静默降级到错误目录。
 
 如果不传 `outputPath`，工具会内联返回完整 base64 图片，适合需要直接显示图片的客户端，但会显著增加上下文占用。除非你明确需要在聊天里内联查看图片，或者明确不希望写本地文件，否则应始终传入 `outputPath`。如果用户没有指定保存位置，推荐默认使用类似 `~/Desktop/antibanana-image.png` 的本地路径；如果 MCP server 运行在 Windows，也可以直接使用 `C:\Users\<用户名>\Desktop\antibanana-image.png`。
 

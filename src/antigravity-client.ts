@@ -78,8 +78,27 @@ export class AntigravityClient {
     model: string;
     aspectRatio?: string;
     imageSize?: string;
+    images?: Array<{ mimeType: string; data: string }>;
   }): Promise<GenerateContentResponse> {
     const projectId = await this.projectIdResolver.getProjectId();
+    const parts: Array<
+      | { text: string }
+      | { inlineData: { mimeType: string; data: string } }
+    > = [];
+
+    if (params.images) {
+      for (const image of params.images) {
+        parts.push({
+          inlineData: {
+            mimeType: image.mimeType,
+            data: image.data,
+          },
+        });
+      }
+    }
+
+    parts.push({ text: params.prompt });
+
     const response = await this.transport.postJson("/v1internal:generateContent", {
       model: params.model,
       project: projectId,
@@ -87,7 +106,7 @@ export class AntigravityClient {
         contents: [
           {
             role: "user",
-            parts: [{ text: params.prompt }],
+            parts,
           },
         ],
         generationConfig: {

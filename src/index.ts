@@ -15,6 +15,7 @@ import {
   selectImagesForMcpResponse,
 } from "./image-selection.js";
 import { buildGenerateImageToolResponse } from "./generate-image-response.js";
+import { readImageFile } from "./image-utils.js";
 import { resolveOutputPath } from "./output-path.js";
 import { ProjectIdResolver } from "./project-id-resolver.js";
 
@@ -219,6 +220,15 @@ async function main(): Promise<void> {
             "Do NOT set this unless the user explicitly requests a specific resolution. " +
             "When a user requests high resolution, inform them of the quota cost and potential risk before proceeding.",
           ),
+        imagePaths: z
+          .array(z.string())
+          .max(3)
+          .optional()
+          .describe(
+            "Optional absolute local image file paths used as edit or combine inputs (max 3). " +
+            "The MCP server reads these files locally, verifies they are real PNG/JPEG/WebP images by file header, then uploads them to Antigravity as inline image inputs before the text prompt. " +
+            "Use this when editing an existing image or combining multiple local images into one result.",
+          ),
         outputPath: z
           .string()
           .optional()
@@ -249,16 +259,20 @@ async function main(): Promise<void> {
         savedPaths: z.array(z.string()).optional(),
       },
     },
-    async ({ prompt, model, aspectRatio, imageSize, outputPath }) => {
+    async ({ prompt, model, aspectRatio, imageSize, imagePaths, outputPath }) => {
       const modelId = model ?? DEFAULT_IMAGE_MODEL;
+      const inputImages = imagePaths
+        ? await Promise.all(imagePaths.map((filePath) => readImageFile(filePath)))
+        : undefined;
       const result = await client.generateImage({
         prompt,
         model: modelId,
         aspectRatio,
         imageSize,
+        images: inputImages,
       });
 
-      const images: Array<{
+      const responseImages: Array<{
         candidateIndex: number;
         partIndex: number;
         mimeType: string;
@@ -274,7 +288,7 @@ async function main(): Promise<void> {
             return;
           }
 
-          images.push({
+          responseImages.push({
             candidateIndex,
             partIndex,
             mimeType: part.inlineData.mimeType,
@@ -283,11 +297,14 @@ async function main(): Promise<void> {
         });
       });
 
-      if (images.length === 0) {
+      if (responseImages.length === 0) {
         throw new Error("Antigravity 未返回任何图片数据");
       }
 
-      const selectedImages = selectImagesForMcpResponse(images, imageFilterMode);
+      const selectedImages = selectImagesForMcpResponse(
+        responseImages,
+        imageFilterMode,
+      );
 
       // 如果指定了 outputPath，将图片保存到本地磁盘
       const savedPaths: string[] = [];

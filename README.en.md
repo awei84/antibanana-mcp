@@ -22,6 +22,7 @@ AI Client (Claude Code / Cursor / ...)
 - **Zero config** — Automatically reads local Antigravity credentials. Just run `npx -y antibanana-mcp`. Also supports explicit credential files
 - **Faithful AG IDE simulation** — Identical request body and imageConfig parameters. By default, the server fetches the latest UA version from the Antigravity releases endpoint and combines it with the current platform, keeping requests aligned with the current AG IDE without sending extra fields AG IDE does not use
 - **Resolution control** — Supports 512 / 1K / 2K / 4K output (defaults to 1K). The `imageSize` parameter is only sent to the backend when explicitly specified, keeping the request fingerprint consistent
+- **Input image editing** — Supports up to 3 local input images via `imagePaths` for edit/composition flows. The server validates absolute paths and PNG/JPEG/WebP file headers, and also supports Windows absolute paths when running inside WSL
 - **Smart thumbnail filtering** — The backend may return both thumbnails and full-resolution images in a single response. By default, only the largest image per candidate is kept
 - **Local save** — Use the `outputPath` parameter to save generated images directly to disk (supports `~/`, `~\\`, and Windows absolute paths) without any extra scripting
 - **Proxy support** — HTTPS proxy supported for regions that need it
@@ -85,9 +86,14 @@ npx -y antibanana-mcp
 | `aspectRatio` | string | — | Aspect ratio, e.g. `1:1`, `16:9`, `4:3` |
 | `model` | string | — | Model ID, defaults to `gemini-3.1-flash-image` |
 | `imageSize` | string | — | Resolution: `512` / `1K` / `2K` / `4K`, default 1K (non-standard param — AI will warn before using) |
+| `imagePaths` | string[] | — | Up to 3 absolute local input image paths for editing or composition. The MCP server reads them locally, validates PNG/JPEG/WebP file headers, then uploads them to Antigravity as inline image inputs; max 20MB per image |
 | `outputPath` | string | — | Local file path to save the image, e.g. `~/Desktop/cat.jpg` or `C:\Users\Alice\Desktop\cat.jpg`. Supports `~/`, `~\\`, and Windows absolute paths. Strongly recommended by default; when set, the image is written to disk and the tool returns only text confirmation plus metadata instead of base64 image data, avoiding heavy context usage |
 
 `generate_image` may return multiple images. The default `largest` mode keeps only the largest image per candidate. Set `ANTIBANANA_IMAGE_FILTER=all` to return all images from the backend.
+
+If `imagePaths` is provided, the request body is sent to Antigravity in `[images..., text]` order, matching the AG IDE local-image editing flow. `imagePaths` accepts absolute paths only; relative paths fail immediately so they do not get resolved against an unexpected working directory.
+
+Note: `imagePaths` is also resolved on the MCP server host. If the server runs inside WSL, a Windows path like `C:\...` is converted to `/mnt/<drive>/...` before reading. If the server runs on regular Linux/macOS, passing a Windows absolute path returns a real error instead of silently degrading to the wrong directory.
 
 If `outputPath` is omitted, the tool returns the full base64 image inline. This is useful for clients that need immediate inline display, but it can consume a large amount of context. Unless the user explicitly wants to view the image inline in chat, or explicitly does not want a local file written, you should always provide `outputPath`. If the user did not specify a save location, prefer a reasonable local path such as `~/Desktop/antibanana-image.png`; if the MCP server runs on Windows, a path like `C:\Users\<user>\Desktop\antibanana-image.png` is also appropriate.
 
