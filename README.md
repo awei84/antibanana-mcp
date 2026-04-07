@@ -89,15 +89,13 @@ npx -y antibanana-mcp
 | `imagePaths` | string[] | — | 最多 3 个本地输入图绝对路径，用于编辑或合成。MCP server 会读取本地文件，校验 PNG/JPEG/WebP 文件头后再上传到后端；单张最大 20MB |
 | `outputPath` | string | — | 本地保存路径，如 `~/Desktop/cat.jpg` 或 `C:\Users\Alice\Desktop\cat.jpg`。支持 `~/`、`~\` 和 Windows 绝对路径。强烈建议默认传入；指定后图片会写入磁盘，并且工具只返回文本确认和元数据，不再回传 base64 图片数据，从而避免严重占用上下文 |
 
-`generate_image` 可能返回多张图。默认 `largest` 模式会对每个 candidate 只保留 base64 最大的一张，设置 `ANTIBANANA_IMAGE_FILTER=all` 可返回后端给出的全部图片。
+`generate_image` 可能返回多张图。默认 `largest` 模式会对每个 candidate 只保留 base64 最大的一张；设置 `ANTIBANANA_IMAGE_FILTER=all` 可返回后端给出的全部图片。
 
-如果传了 `imagePaths`，请求体会按 `[images..., text]` 顺序发送给 Antigravity，用法与 AG IDE 的本地图片编辑模式一致。`imagePaths` 只接受绝对路径；相对路径会直接报错，避免在 `npx` 或不同工作目录下解析到错误位置。
+如果传了 `imagePaths`，请求体会按 `[images..., text]` 顺序发送给 Antigravity，用法与 AG IDE 的本地图片编辑模式一致。`imagePaths` 只接受绝对路径，最多 3 张，单张最大 20MB，仅支持 PNG/JPEG/WebP。
 
-注意：`imagePaths` 也按 MCP server 自身的运行环境解析。如果 server 跑在 WSL，传入 `C:\...` 会自动转换成 `/mnt/<drive>/...` 后读取；如果 server 跑在普通 Linux/macOS，直接传 Windows 绝对路径会报真实错误，而不会静默降级到错误目录。
+如果不传 `outputPath`，工具会内联返回完整 base64 图片，适合需要直接显示图片的客户端，但会显著增加上下文占用。除非明确需要内联查看图片，否则建议始终传入 `outputPath`，例如 `~/Desktop/antibanana-image.png` 或 `C:\Users\<用户名>\Desktop\antibanana-image.png`。
 
-如果不传 `outputPath`，工具会内联返回完整 base64 图片，适合需要直接显示图片的客户端，但会显著增加上下文占用。除非你明确需要在聊天里内联查看图片，或者明确不希望写本地文件，否则应始终传入 `outputPath`。如果用户没有指定保存位置，推荐默认使用类似 `~/Desktop/antibanana-image.png` 的本地路径；如果 MCP server 运行在 Windows，也可以直接使用 `C:\Users\<用户名>\Desktop\antibanana-image.png`。
-
-注意：`outputPath` 始终按 MCP server 自身的运行环境解析。如果 server 跑在 WSL，传入 `C:\...` 会自动转换成 `/mnt/<drive>/...`；如果 server 跑在普通 Linux/macOS，直接传 Windows 绝对路径会报真实错误，而不会静默降级到错误目录。
+注意：`imagePaths` 和 `outputPath` 都按 MCP server 自身的运行环境解析。在 WSL 下，`C:\...` 会自动转换成 `/mnt/<drive>/...`；在普通 Linux/macOS 下，直接传 Windows 绝对路径会报真实错误，不会静默降级到其他目录。
 
 ## 固化凭证（可选，更稳定）
 

@@ -91,13 +91,11 @@ npx -y antibanana-mcp
 
 `generate_image` may return multiple images. The default `largest` mode keeps only the largest image per candidate. Set `ANTIBANANA_IMAGE_FILTER=all` to return all images from the backend.
 
-If `imagePaths` is provided, the request body is sent to Antigravity in `[images..., text]` order, matching the AG IDE local-image editing flow. `imagePaths` accepts absolute paths only; relative paths fail immediately so they do not get resolved against an unexpected working directory.
+If `imagePaths` is provided, the request body is sent to Antigravity in `[images..., text]` order, matching the AG IDE local-image editing flow. `imagePaths` accepts absolute paths only, supports up to 3 images, allows up to 20MB per image, and only accepts PNG/JPEG/WebP.
 
-Note: `imagePaths` is also resolved on the MCP server host. If the server runs inside WSL, a Windows path like `C:\...` is converted to `/mnt/<drive>/...` before reading. If the server runs on regular Linux/macOS, passing a Windows absolute path returns a real error instead of silently degrading to the wrong directory.
+If `outputPath` is omitted, the tool returns the full base64 image inline. This is useful for clients that need immediate inline display, but it can consume a large amount of context. Unless inline display is explicitly required, you should usually provide `outputPath`, such as `~/Desktop/antibanana-image.png` or `C:\Users\<user>\Desktop\antibanana-image.png`.
 
-If `outputPath` is omitted, the tool returns the full base64 image inline. This is useful for clients that need immediate inline display, but it can consume a large amount of context. Unless the user explicitly wants to view the image inline in chat, or explicitly does not want a local file written, you should always provide `outputPath`. If the user did not specify a save location, prefer a reasonable local path such as `~/Desktop/antibanana-image.png`; if the MCP server runs on Windows, a path like `C:\Users\<user>\Desktop\antibanana-image.png` is also appropriate.
-
-Note: `outputPath` is always resolved on the MCP server host. If the server runs inside WSL, a Windows path like `C:\...` is converted to `/mnt/<drive>/...`. If the server runs on regular Linux/macOS, passing a Windows absolute path returns a real error instead of silently writing to the wrong directory.
+Note: both `imagePaths` and `outputPath` are resolved on the MCP server host. In WSL, `C:\...` is converted to `/mnt/<drive>/...`; on regular Linux/macOS, passing a Windows absolute path returns a real error instead of silently degrading to another directory.
 
 ## Pinned Credentials (Optional)
 
