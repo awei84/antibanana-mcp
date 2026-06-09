@@ -77,7 +77,9 @@ export type GenerateContentResponse = z.infer<
 >;
 
 export const loadCodeAssistResponseSchema = z.object({
-  cloudaicompanionProject: z.string().min(1),
+  // 后端在账号未激活等场景下会返回 200 但省略该字段，故设为可选，
+  // 由 ProjectIdResolver 做存在性校验并抛出可操作的错误提示
+  cloudaicompanionProject: z.string().min(1).optional(),
 });
 
 export type LoadCodeAssistResponse = z.infer<typeof loadCodeAssistResponseSchema>;

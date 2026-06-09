@@ -6,6 +6,9 @@ const ANTIGRAVITY_FALLBACK_VERSION = "1.21.9";
 const ANTIGRAVITY_VERSION_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const ANTIGRAVITY_VERSION_FETCH_TIMEOUT_MS = 10_000;
 
+// 控制面调用（loadCodeAssist）在 UA 后追加该后缀，对齐真实 AG IDE 的 Node API 客户端指纹
+const ANTIGRAVITY_NODE_API_CLIENT_UA = "google-api-nodejs-client/10.3.0";
+
 type AntigravityRelease = {
   version?: string;
   execution_id?: string;
@@ -17,6 +20,12 @@ let inflightVersionPromise: Promise<string> | undefined;
 
 export async function resolveDefaultAntigravityUserAgent(): Promise<string> {
   return buildUserAgent(await resolveAntigravityVersion());
+}
+
+// 控制面调用（loadCodeAssist）专用 UA：业务面 UA + Node API 客户端后缀
+export async function resolveLoadCodeAssistUserAgent(): Promise<string> {
+  const baseUa = buildUserAgent(await resolveAntigravityVersion());
+  return `${baseUa} ${ANTIGRAVITY_NODE_API_CLIENT_UA}`;
 }
 
 export function buildUserAgent(

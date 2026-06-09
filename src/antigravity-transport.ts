@@ -4,8 +4,15 @@ import type { Agent as HttpAgent } from "node:http";
 import { HttpsProxyAgent } from "https-proxy-agent";
 
 import type { CredentialManager } from "./credentials.js";
-import { resolveDefaultAntigravityUserAgent } from "./antigravity-user-agent.js";
+import {
+  resolveDefaultAntigravityUserAgent,
+  resolveLoadCodeAssistUserAgent,
+} from "./antigravity-user-agent.js";
 
+// 注意：本传输层刻意使用 Node 原生 https.request 直发，仅设置 4 个 header
+// （Authorization / User-Agent / Content-Type / Connection），以精确模拟 AG IDE 的
+// 请求指纹。请勿替换为 axios / undici / got 等库——它们会自动注入
+// Accept-Encoding、Sec-* 等额外 header，破坏指纹一致性。
 const DEFAULT_BASE_URL = "https://cloudcode-pa.googleapis.com";
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_RETRIES = 2;
@@ -103,8 +110,7 @@ export class AntigravityTransport {
     const accessToken = await this.credentialManager.getAccessToken();
     const payload = JSON.stringify(body);
     const requestUrl = new URL(pathname, this.baseUrl);
-    const userAgent =
-      this.userAgentOverride ?? await resolveDefaultAntigravityUserAgent();
+    const userAgent = this.userAgentOverride ?? (await resolveUserAgentForPath(pathname));
 
     return await new Promise<unknown>((resolve, reject) => {
       const request = https.request(
@@ -230,6 +236,15 @@ function getRetryDelayMs(error: unknown, attempt: number): number {
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// loadCodeAssist 属于控制面调用，使用追加 Node API 客户端后缀的 UA；
+// 其余业务面调用（generateContent / fetchAvailableModels）使用标准 UA
+async function resolveUserAgentForPath(pathname: string): Promise<string> {
+  if (pathname.includes(":loadCodeAssist")) {
+    return resolveLoadCodeAssistUserAgent();
+  }
+  return resolveDefaultAntigravityUserAgent();
 }
 
 function buildRequestAgent(proxyUrl: string | undefined): HttpAgent {
